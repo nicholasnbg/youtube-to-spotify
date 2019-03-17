@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "node -r esm index.js"
+    "dev": "node -r esm -r dotenv/config index.js"
   },
   "author": "Nick Gray",
   "license": "MIT",
   "dependencies": {
     "axios": "^0.18.0",
     "cheerio": "^1.0.0-rc.2",
+    "dotenv": "^7.0.0",
     "esm": "^3.2.18",
     "express": "^4.16.4",
     "jest": "^24.5.0",

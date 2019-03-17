@@ -1,7 +1,14 @@
+import dotenv from "dotenv";
+
 import express from "express";
 import opn from "opn";
-import { getHTML, getVideoDescription } from "./lib/scraper";
-import { getFirstSearchResult } from "./lib/spotify-helpers";
+import { getHTML, getVideoDescription, getVideoTitle } from "./lib/scraper";
+import {
+  getFirstSearchResult,
+  createPlaylist,
+  addTracksToPlaylist,
+  getUserId
+} from "./lib/spotify-helpers";
 import { spotifyApi, authURL } from "./lib/spotify-auth";
 
 const app = express();
@@ -27,7 +34,10 @@ app.get("/callback", (req, res) => {
 });
 
 async function nextFunction(api) {
-  await getTrackList().then(async trackList => {
+  const html = await getHTML(
+    "https://www.youtube.com/watch?v=88EFvUmsoJI&t=179s"
+  );
+  await getTrackList(html).then(async trackList => {
     const trackPromises = trackList.map(async track => {
       const query = `${track.artist} ${track.title}`;
       const obj = await getFirstSearchResult(api, query);
@@ -35,14 +45,23 @@ async function nextFunction(api) {
     });
 
     const trackObjs = await Promise.all(trackPromises).then(arr => arr);
-    console.log(trackObjs[0]);
+    const videoTitle = getVideoTitle(html);
+
+    const userId = await getUserId(api);
+
+    console.log("creating playlist...");
+    const playlist = await createPlaylist(api, userId, videoTitle);
+    const { id: playlistId } = playlist;
+    const trackURIs = trackObjs.map(track => track.uri);
+    api
+      .addTracksToPlaylist(playlistId, trackURIs)
+      .then(res => console.log(res))
+      .catch(err => console.log({ err }));
   });
 }
 
-async function getTrackList() {
-  const tracks = getVideoDescription(
-    await getHTML("https://www.youtube.com/watch?v=88EFvUmsoJI&t=179s")
-  );
+async function getTrackList(html) {
+  const tracks = getVideoDescription(html);
   return tracks;
 }
 
